@@ -27,12 +27,12 @@ function Test-SourceControlSyncJob {
     while($true){
         $syncJobs = Get-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
         if($syncJobs[0].ProvisioningState -like "*Failed*"){
-            Write-Verbose "Failed Retrying sync job"
+            Write-Verbose -Message "Failed Retrying sync job"
             $syncjob = Start-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
         }
 
         if($syncJobs[0].ProvisioningState -like "*Completed*"){
-            Write-Verbose $syncjob
+            Write-Verbose -Message $syncjob
             break;
         }
     }
