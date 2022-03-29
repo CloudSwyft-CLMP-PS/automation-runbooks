@@ -32,7 +32,7 @@ if($ConnectAzure.IsPresent) {
 
 #Region - Deploying the Azure Runbooks
 if($DeployRunbooks.IsPresent) {
-    $Runbooks = (Get-ChildItem -Path "./runbooks").Name
+    $Runbooks = (Get-ChildItem -Path ".\runbooks").Name
     $AutomationSourceControl = Get-AzAutomationSourceControl -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
     # Adding the names of existing runbooks into an Array
     $AutomationSourceControlList = New-Object -TypeName System.Collections.ArrayList
@@ -56,7 +56,7 @@ if($DeployRunbooks.IsPresent) {
         else {
             # If the runbooks doesn't exist, the create a new source control job, and sync it to Azure
             Write-Verbose -Message "Runbook hasn't been connected with Azure Automation. Uploading source code for runbook"
-            $FolderPath = "/runbooks/"
+            $FolderPath = "\runbooks"
             try {
                 New-AzAutomationSourceControl -ResourceGroupName $ResourceGroupName `
                     -AutomationAccountName $AutomationAccountName `
