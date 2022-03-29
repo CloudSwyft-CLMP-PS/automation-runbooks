@@ -97,7 +97,7 @@ $templateParameterobjectStorageDiag = @{
 
 $uniqueId = (NEW-GUID).ToString().Replace("-","")
 
-$templateUrl = ".\templates\nsg-web-app.network.json"
+$templateUrl = "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/nsg-web-app.network.json?token=GHSAT0AAAAAABS4ZXXO5TJCAW5K6WXBT6E2YSDG7GQ"
 
 $resourceGroup =   Get-AzResourceGroup -Name $resourceGroupName -ErrorVariable Rg -ErrorAction SilentlyContinue  | OUT-NULL
 
@@ -121,7 +121,7 @@ $deploymentNsg = New-AzResourceGroupDeployment `
     -Name (NEW-GUID).ToString().Replace("-","") `
     -ResourceGroupName $resourceGroupName `
     -templateParameterobject  $templateParameterobjectNsg `
-    -TemplateUri ".\templates\virtual-network\nsg-web-app.network.json" | OUT-NULL
+    -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/nsg-web-app.network.json?token=GHSAT0AAAAAABS4ZXXO5TJCAW5K6WXBT6E2YSDG7GQ" | OUT-NULL
 .\Log-Info.ps1 -Message "COMPLETED | CREATING NSG :: $nsgName"
 
 .\Log-Info.ps1 -Message "INITIALIZED | CREATING VIRTUAL NETWORK :: $vNetName"
@@ -129,7 +129,7 @@ $deploymentVnet = New-AzResourceGroupDeployment `
     -Name (NEW-GUID).ToString().Replace("-","") `
     -ResourceGroupName $resourceGroupName `
     -templateParameterobject  $templateParameterobjectVnet `
-    -TemplateUri ".\templates\virtual-network\azuredeploy.network.json" | OUT-NULL
+    -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/azuredeploy.network.json?token=GHSAT0AAAAAABS4ZXXOD2VHDL3DIDDY5YQ4YSDHAAA" | OUT-NULL
 .\Log-Info.ps1 -Message "COMPLETED | CREATING VIRTUAL NETWORK :: $vNetName"
 
 .\Log-Info.ps1 -Message "INITIALIZED | CREATING STORAGE ACCOUNT :: $storage"
@@ -137,7 +137,7 @@ New-AzResourceGroupDeployment `
     -Name "$storage-$uniqueId" `
     -ResourceGroupName $resourceGroupName `
     -templateParameterobject  $templateParameterobjectStorage `
-    -TemplateUri ".\templates\storage-account\azuredeploy.json" | OUT-NULL
+    -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/storage-account/azuredeploy.json?token=GHSAT0AAAAAABS4ZXXP557YWRSRLV2TUDQMYSDHBAQ" | OUT-NULL
 .\Log-Info.ps1 -Message "COMPLETED | CREATING STORAGE ACCOUNT :: $storage"
 
 .\.test\Log-Info.ps1 -Message "INITIALIZED | CREATING STORAGE ACCOUNT DIAG :: $storage"
@@ -145,6 +145,5 @@ New-AzResourceGroupDeployment `
     -Name "$storage-$uniqueId" `
     -ResourceGroupName $resourceGroupName `
     -templateParameterobject  $templateParameterobjectStorageDiag `
-    -TemplateUri ".\templates\storage-account\diagnostics.json" | OUT-NULL
-#    -TemplateUri "https://$storageAccountName.blob.core.windows.net/labs-infrastructure/storage-account/azuredeploy.json$sharedStorageAccountSasToken" | OUT-NULL
+    -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/storage-account/diagnostics.json?token=GHSAT0AAAAAABS4ZXXPO3MMZJ5NYQMSZXWAYSDHBEQ" | OUT-NULL
 .\.test\Log-Info.ps1 -Message "COMPLETED | CREATING STORAGE ACCOUNT  DIAG :: $storage"
