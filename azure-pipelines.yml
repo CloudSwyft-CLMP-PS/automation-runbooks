@@ -18,4 +18,4 @@ stages:
         displayName: 'Deploying Runbooks'
         inputs:
           targetType: 'inline'
-          script: ./scripts/run.ps1 -DeployRunbooks -RepoURL $(RepoURL) -RepoAccessToken $(RepoAccessToken) -ResourceGroupName $(ResourceGroupName) -AutomationAccountName $(AutomationAccountName) -Verbose
+          script: ./scripts/run.ps1 -DeployRunbooks -RepoURL $(RepoURL) -SourceControlType $(SourceControlType) -SourceControlBranch $(SourceControlBranch) -RepoAccessToken $(RepoAccessToken) -ResourceGroupName $(ResourceGroupName) -AutomationAccountName $(AutomationAccountName) -Verbose
