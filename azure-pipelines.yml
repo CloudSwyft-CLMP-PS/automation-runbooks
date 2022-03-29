@@ -1,0 +1,21 @@
+trigger:
+- main
+
+stages:
+- stage: DeployRunbook
+  pool:
+    vmImage: 'ubuntu-latest'
+  jobs:
+  - job: deploy_runbooks
+    displayName: 'Deploy Runbooks'
+    steps:
+      - task: PowerShell@2
+        displayName: 'Connecting to Azure'
+        inputs:
+          targetType: 'inline'
+          script: ./scripts/run.ps1 -ConnectAzure -ResourceGroupName $(ResourceGroupName) -ServicePrincipalName $(ServicePrincipalName) -ServicePrincipalPass $(ServicePrincipalPass) -SubscriptionId $(SubscriptionId) -TenantId $(TenantId) -Verbose
+      - task: PowerShell@2
+        displayName: 'Deploying Runbooks'
+        inputs:
+          targetType: 'inline'
+          script: ./scripts/run.ps1 -DeployRunbooks -RepoURL $(RepoURL) -RepoAccessToken $(RepoAccessToken) -ResourceGroupName $(ResourceGroupName) -AutomationAccountName $(AutomationAccountName) -Verbose
