@@ -32,7 +32,7 @@ function Test-SourceControlSyncJob {
         }
 
         if($syncJobs[0].ProvisioningState -like "*Completed*"){
-            Write-Verbose -Message $syncjob
+            Write-Output $syncjob
             break;
         }
     }
