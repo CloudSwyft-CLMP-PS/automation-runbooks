@@ -13,6 +13,31 @@ param (
     [Parameter(Mandatory=$false)][String]$AutomationAccountName
 )
 
+#Region - Test-SourceControlSyncJob
+function Test-SourceControlSyncJob {
+    param (
+        $SourceControlName,
+        $ResourceGroupName,
+        $AutomationAccountName
+    )
+    
+    $syncjob #= Start-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+
+    $syncJobs = Get-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+    while($true){
+        $syncJobs = Get-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+        if($syncJobs[0].ProvisioningState -like "*Failed*"){
+            Write-Verbose "Failed Retrying sync job"
+            $syncjob = Start-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+        }
+
+        if($syncJobs[0].ProvisioningState -like "*Completed*"){
+            Write-Verbose $syncjob
+            break;
+        }
+    }
+}
+#EndRegion
 
 #Region - Connecting to Azure
 if($ConnectAzure.IsPresent) {
@@ -68,12 +93,16 @@ if($DeployRunbooks.IsPresent) {
                     -AccessToken (ConvertTo-SecureString $RepoAccessToken -AsPlainText -Force)
                 
                 Start-AzAutomationSourceControlSyncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
-    
             }
             catch {
                 Write-Error -Message "$($_)"
             }
         }
     }
+    foreach($Runbook in $Runbooks) {
+        $Runbook = $Runbook.Replace(".ps1","")
+        Test-SourceControlSyncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+    }
+
 }
 #EndRegion
