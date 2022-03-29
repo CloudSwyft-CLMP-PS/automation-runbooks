@@ -16,22 +16,24 @@ param (
 #Region - Test-SourceControlSyncJob
 function Test-SourceControlSyncJob {
     param (
+        $syncjob,
         $SourceControlName,
         $ResourceGroupName,
         $AutomationAccountName
     )
     
-    $syncjob #= Start-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+     #= Start-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
 
-    $syncJobs = Get-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+    $syncJobs = Get-AzAutomationSourceControlSyncJob -JobId ($syncjob.SourceControlSyncJobId) -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
     while($true){
-        $syncJobs = Get-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+        $syncJobs = Get-AzAutomationSourceControlSyncJob -JobId ($syncjob.SourceControlSyncJobId) -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
         if($syncJobs[0].ProvisioningState -like "*Failed*"){
             Write-Verbose -Message "Failed Retrying sync job"
             $syncjob = Start-AzAutomationSourceControlSyncJob -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
         }
 
         if($syncJobs[0].ProvisioningState -like "*Completed*"){
+            $syncJobs = Get-AzAutomationSourceControlSyncJob -JobId ($syncjob.SourceControlSyncJobId) -SourceControlName $SourceControlName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
             break;
         }
     }
@@ -63,7 +65,6 @@ if($DeployRunbooks.IsPresent) {
     foreach($sourceControl in $AutomationSourceControl){ 
         $AutomationSourceControlList.Add($sourceControl.Name)
     }
-    
     # foreach loop running through all the runbooks located in your repository
     foreach($Runbook in $Runbooks) {
         $Runbook = $Runbook.Replace(".ps1","")
@@ -71,7 +72,8 @@ if($DeployRunbooks.IsPresent) {
             # If the runbook exists in Azure, then just run a sync on it
             try {
                 Write-Verbose -Message "Runbook: $($Runbook) was found in Automation Source Control list. Updating source code now"
-                Start-AzAutomationSourceControlSyncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+                $syncJob = Start-AzAutomationSourceControlSyncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+                Test-SourceControlSyncJob -syncjob $syncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
             }
             catch {
                 Write-Error -Message "$($_)"
@@ -91,17 +93,15 @@ if($DeployRunbooks.IsPresent) {
                     -FolderPath $FolderPath `
                     -AccessToken (ConvertTo-SecureString $RepoAccessToken -AsPlainText -Force)
                 
-                Start-AzAutomationSourceControlSyncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+                $syncJob = Start-AzAutomationSourceControlSyncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
+                Test-SourceControlSyncJob -syncjob $syncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
             }
             catch {
                 Write-Error -Message "$($_)"
             }
         }
     }
-    foreach($Runbook in $Runbooks) {
-        $Runbook = $Runbook.Replace(".ps1","")
-        Test-SourceControlSyncJob -SourceControlName $Runbook -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
-    }
+    
 
 }
 #EndRegion
