@@ -45,7 +45,7 @@ if($ConnectAzure.IsPresent) {
     Write-Verbose -Message "Checking and Installing Azure Powershell Module"
     if (-not(Get-Module -Name Az.Accounts -ListAvailable)){
         Write-Warning "Module 'Az.Accounts' is missing or out of date. Installing module now."
-        Install-Module -Name Az.Accounts, Az.Resources, Az.Automation -Scope CurrentUser -Force -AllowClobber
+        Install-Module -Name Az.Accounts, Az.Resources, Az.Automation, Az.Storage -Scope CurrentUser -Force -AllowClobber
     }
 
     Write-Verbose -Message "Connecting to Azure"

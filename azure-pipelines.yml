@@ -23,4 +23,4 @@ stages:
         displayName: 'Uploading Runbooks'
         inputs:
           targetType: 'inline'
-          script: .\scripts\upload-files.ps1 -ResourceGroupName $(ResourceGroupName) -ServicePrincipalName $(ServicePrincipalName) -ServicePrincipalPass $(ServicePrincipalPass) -SubscriptionId $(SubscriptionId) -TenantId $(TenantId) -ConnectAzure -StorageAccount $(StorageAccount) -Verbose
+          script: ./scripts/upload-files.ps1 -ResourceGroupName $(ResourceGroupName) -ServicePrincipalName $(ServicePrincipalName) -ServicePrincipalPass $(ServicePrincipalPass) -SubscriptionId $(SubscriptionId) -TenantId $(TenantId) -ConnectAzure -StorageAccount $(StorageAccount) -Verbose
