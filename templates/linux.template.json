@@ -1,0 +1,209 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "defaultValue": "[resourceGroup().location]",
+            "type": "String"
+        },
+        "networkSecurityGroupId": {
+            "type": "String"
+        },
+        "subnetName": {
+            "type": "String"
+        },
+        "virtualNetworkId": {
+            "type": "String"
+        },
+        "virtualMachineName": {
+            "type": "String"
+        },
+        "storageAccountName": {
+            "type": "String"
+        },
+        "publicIpAddressType": {
+            "defaultValue": "Dynamic",
+            "type": "String"
+        },
+        "publicIpAddressSku": {
+            "defaultValue": "Basic",
+            "type": "String"
+        },
+        "virtualMachineSize": {
+            "defaultValue": "Standard_D2s_v3",
+            "type": "String"
+        },
+        "adminUsername": {
+            "defaultValue" : "cloudswfytonline",
+            "type": "String"
+        },
+        "adminPassword": {
+            "defaultValue" : "cloudswfytonline@12321234",
+            "type": "String"
+        },
+        "patchMode": {
+            "defaultValue" : "AutomaticByOS",
+            "type": "String"
+        },
+        "imageUri": {
+            "type": "String"
+        },
+        "tags": {
+            "defaultValue": {},
+            "type": "Object"
+        },
+        "computerName": {
+            "type": "String"
+        },
+        "defaultVhdLocationPath": {
+            "defaultValue" : "vhds/",
+            "type": "String"
+        },
+        "newTemplateName": {
+            "defaultValue" : "",
+            "type": "String"
+        },
+        "diskSizeGB": {
+            "defaultValue" : 127,
+            "type": "int"
+        }
+    },
+    "variables": {
+        "nsgId": "[parameters('networkSecurityGroupId')]",
+        "vnetId": "[parameters('virtualNetworkId')]",
+        "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+        "storageContainerUri": "[concat(concat('https://', parameters('storageAccountName'), '.blob.core.windows.net/'), parameters('defaultVhdLocationPath'))]",
+        "vmIdentifier": "[parameters('virtualMachineName')]",
+        "vhdName": "[if(empty(parameters('newTemplateName')), parameters('virtualMachineName'), parameters('newTemplateName'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-10-01",
+            "name": "[variables('vmIdentifier')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/', variables('vmIdentifier'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('vmIdentifier'))]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[variables('nsgId')]"
+                }
+            },
+            "tags": "[parameters('tags')]"
+        },
+        {
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2019-02-01",
+            "name": "[variables('vmIdentifier')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "[parameters('publicIpAddressSku')]"
+            },
+            "properties": {
+                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]",
+                "dnsSettings": {
+                    "domainNameLabel": "[toLower(variables('vmIdentifier'))]",
+                    "fqdn": "[toLower(concat(variables('vmIdentifier'),'.', parameters('location'), '.cloudapp.azure.com'))]"
+                }
+            },
+            "tags": "[parameters('tags')]"
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('vmIdentifier')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('vmIdentifier'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "osType": "Linux",
+                        "vhd": {
+                            "uri": "[concat(variables('storageContainerUri'), variables('vhdName'), '.vhd')]"
+                        },
+                        "name": "[variables('vmIdentifier')]",
+                        "image": {
+                            "uri": "[parameters('imageUri')]"
+                        },
+                        "caching": "ReadWrite",
+                        "diskSizeGB": "[parameters('diskSizeGB')]"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmIdentifier'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[parameters('computerName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "[concat('https://', parameters('storageAccountName'), '.blob.core.windows.net/')]"
+                    }
+                }
+            },
+            "tags": "[parameters('tags')]"
+        }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "String",
+            "value": "[parameters('adminUsername')]"
+        },
+        "adminPassword": {
+            "type": "String",
+            "value": "[parameters('adminPassword')]"
+        },
+        "resourceId": {
+            "value": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmIdentifier'))]",
+            "type": "string"
+        },
+        "publicIp": {
+            "value": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vmIdentifier'))]",
+            "type": "string"
+        },
+        "publicIpDns": {
+			"value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('vmIdentifier'))).dnsSettings.fqdn]",
+            "type": "string"
+        },
+        "NicId": {
+            "value": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmIdentifier'))]",
+            "type": "string"
+        },
+        "storageUri": {
+            "value": "[concat(variables('storageContainerUri'), variables('vhdName'), '.vhd')]",
+            "type": "string"
+        },
+		"osType": {
+			"value": "Linux",
+			"type": "string"
+		}
+    }
+}
