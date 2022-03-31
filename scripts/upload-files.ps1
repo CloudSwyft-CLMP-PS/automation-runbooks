@@ -21,7 +21,7 @@ if(-not [bool](Get-AzStorageContainer -Name "cloudswyft-runbook" -Context $Stora
     $newContainer = New-AzStorageContainer -Name "cloudswyft-runbook" -Context $StorageContext -ErrorAction SilentlyContinue
     Write-Output $newContainer
 }
-$sourceFileRootDirectory = ".\templates\";
+$sourceFileRootDirectory = "$(Get-Location)\templates\";
 
 $container = Get-AzStorageContainer -Name "cloudswyft-runbook" -Context $StorageContext
 $container.CloudBlobContainer.Uri.AbsoluteUri
