@@ -26,11 +26,11 @@ $sourceFileRootDirectory = "$(Get-Location)\templates\";
 $container = Get-AzStorageContainer -Name "cloudswyft-runbook" -Context $StorageContext
 $container.CloudBlobContainer.Uri.AbsoluteUri
 if ($container) {
-    $filesToUpload = Get-ChildItem $sourceFileRootDirectory -Recurse -File
-    foreach($file in $filesToUpload){
-        $targetPath = ($file.fullname.Substring($sourceFileRootDirectory.Length + 1)).Replace("\", "/")
-        Write-Verbose "Uploading $("\" + $file.fullname.Substring($sourceFileRootDirectory.Length + 1)) to $($container.CloudBlobContainer.Uri.AbsoluteUri + "/" + $targetPath)"
-        Set-AzStorageBlobContent -File $file.fullname -Container $container.Name -Blob $targetPath -Context $StorageContext -Force:$Force | Out-Null
-    }
+    #$filesToUpload = Get-ChildItem $sourceFileRootDirectory -Recurse -File
+    #foreach($file in $filesToUpload){
+    #   $targetPath = ($file.fullname.Substring($sourceFileRootDirectory.Length + 1)).Replace("\", "/")
+    #    Write-Verbose "Uploading $("\" + $file.fullname.Substring($sourceFileRootDirectory.Length + 1)) to $($container.CloudBlobContainer.Uri.AbsoluteUri + "/" + $targetPath)"
+        Get-ChildItem $sourceFileRootDirectory -Recurse -File | Set-AzStorageBlobContent -Container $container.Name -Context $StorageContext -Force:$Force # | Out-Null
+    #}
 }
 #EndRegion
