@@ -33,7 +33,7 @@
             "type": "String"
         },
         "virtualMachineSize": {
-            "defaultValue": "Standard_D2s_v3",
+            "defaultValue": "Standard_B2ms",
             "type": "String"
         },
         "adminUsername": {
@@ -172,7 +172,7 @@
                 "diagnosticsProfile": {
                     "bootDiagnostics": {
                         "enabled": true,
-                        "storageUri": "[concat('https://', parameters('storageAccountName'), '.blob.core.windows.net/')]"
+                        "storageUri": "[concat('https://', parameters('storageAccountName'), 'diag.blob.core.windows.net/')]"
                     }
                 }
             },
