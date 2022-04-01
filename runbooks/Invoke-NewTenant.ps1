@@ -28,7 +28,7 @@ $applicationId              = $requestBody.applicationId
 $applicationSecret          = $requestBody.applicationSecret
 $applicationTenantId        = $requestBody.applicationTenantId
 
-IF(($null -eq $Prefix) -or ($null -eq $environment) -or ($null -eq $clientCode)){
+IF(($null -eq $Prefix) -or ($null -eq $environment)){
     WRITE-OUTPUT $WebhookData
     THROW "Incorrect request body."
 } 
@@ -42,21 +42,21 @@ Authenticate-Principal `
 
 .\Log-Info.ps1 -Message "INFORMATION | Prefix : $Prefix" 
 .\Log-Info.ps1 -Message "INFORMATION | CLOUD REGION : $Region" 
-.\Log-Info.ps1 -Message "INFORMATION | CLIENT CODE : $clientCode"
+#.\Log-Info.ps1 -Message "INFORMATION | CLIENT CODE : $clientCode"
 .\Log-Info.ps1 -Message "INFORMATION | ENVIRONMENT : $environment" 
 .\Log-Info.ps1 -Message "INFORMATION | USE CLOUDSWYFT TENANT : $UseCloudSwyftTenant" 
 
-$resourceGroupName                  =   "cs-$Prefix-$environment-$clientCode-rgrp".ToUpper()
-$nsgName                            =   "cs-$Prefix-$environment-$clientCode-nsg".ToUpper()
-$vNetName                           =   "cs-$Prefix-$environment-$clientCode-vnet".ToUpper()
-$storage                            =   -join("cs", $Prefix,$environment,$clientCode, "stg").ToLower() 
-$storageDiag                        =   -join("cs", $Prefix,$environment,$clientCode, "diag").ToLower() 
+$resourceGroupName                  =   "cs-$Prefix-$environment-rgrp".ToUpper()
+$nsgName                            =   "cs-$Prefix-$environment-nsg".ToUpper()
+$vNetName                           =   "cs-$Prefix-$environment-vnet".ToUpper()
+$storage                            =   -join("cs", $Prefix,$environment, "stg").ToLower() 
+#$storageDiag                        =   -join("cs", $Prefix,$environment, "stgdiag").ToLower() 
 
 $rgTags = @{ 
     "_business_name"        =   "cs";
     "_region"               =   $Region;
     "_contact_person"       =   $contactEmail;
-    "_client_code"          =   $clientCode.ToUpper(); 
+    #"_client_code"          =   $clientCode.ToUpper(); 
     "_environment"          =   $environment.ToUpper()
 }
 
@@ -89,14 +89,14 @@ $templateParameterobjectStorage = @{
 }
 
 $templateParameterobjectStorageDiag = @{
-    "storageAccountName"            =   $storageDiag;
+    "storageAccountName"            =   ($storage+"diag");
     "storageSkuName"                =   "Standard_LRS";
     "tags"                          =   $rgTags;
 }
 
 $uniqueId = (NEW-GUID).ToString().Replace("-","")
 
-$templateUrl = "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/nsg-web-app.network.json"
+#$templateUrl = "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/nsg-web-app.network.json"
 
 $resourceGroup =   Get-AzResourceGroup -Name $resourceGroupName -ErrorVariable Rg -ErrorAction SilentlyContinue  | OUT-NULL
 

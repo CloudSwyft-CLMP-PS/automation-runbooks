@@ -42,21 +42,21 @@ function Scramble-String(
 function New-VirtualMachine {
     try{
         $requestBody                    = (ConvertFrom-Json -InputObject $WebhookData.RequestBody)
-        $location                       = $requestBody.location
-        $environment                    = $requestBody.environment 
-        $clientCode                     = $requestBody.clientCode
-        $imageName                      = $requestBody.imageName
+        $location                       = $requestBody.location # azure region
+        $environment                    = $requestBody.environment # Emvironment
+        $clientCode                     = $requestBody.clientCode # Prefix
+        $imageName                      = $requestBody.imageName # Image Name 
         $vmSize                         = $requestBody.size
         $tenantId                       = $requestBody.tenantId
-        $groupCode                      = $requestBody.groupCode
+        $groupCode                      = $clientCode
         $fqdn                           = $requestBody.fqdn
-        $useCloudSwyftTenant            = $requestBody.useCloudSwyftTenant
-        $computerName                   = $requestBody.computerName
-        $defaultVhdLocationPath         = $requestBody.defaultVhdLocationPath
+        #$useCloudSwyftTenant            = $requestBody.useCloudSwyftTenant
+        #$computerName                   = $requestBody.computerName
+        #$defaultVhdLocationPath         = $requestBody.defaultVhdLocationPath
         $templateName                   = $requestBody.templateName
         $isCustomTemplate               = $requestBody.isCustomTemplate
         $diskSizeGB                     = $requestBody.TempStorageSizeInGb
-        $isVirtualMachineReadyForUsage  = 0
+        #$isVirtualMachineReadyForUsage  = 0
         $imageUri                       = $requestBody.imageUri
         $contactPerson                  = $requestBody.contactPerson
         $storage                        = $requestBody.storage
@@ -70,13 +70,14 @@ function New-VirtualMachine {
 
         $applicationSubscriptionId              = $requestBody.ApplicationSubscriptionId
         $applicationId                          = $requestBody.ApplicationId
-        $applicationTenantId                    = $requestBody.ApplicationTenantId       
-        $requestId                              = $requestBody.RequestId
-        $codeLocation                           = $requestBody.Region
-        $virtual_machine_provisioning_started   = 10001
-        $virtual_machine_provisioning_success   = 10002
-        $virtual_machine_provisioning_failure   = 10003
-        $virtualMachineDeploymentStatus         = 1 ### 1 Determines Success, 0 Failure
+        $applicationTenantId                    = $requestBody.ApplicationTenantId    
+        $applicationSecret                      = $requestBody.ApplicationSecret   
+        #$requestId                              = $requestBody.RequestId
+        #$codeLocation                           = $requestBody.Region
+        #$virtual_machine_provisioning_started   = 10001
+        #$virtual_machine_provisioning_success   = 10002
+        #$virtual_machine_provisioning_failure   = 10003
+        #$virtualMachineDeploymentStatus         = 1 ### 1 Determines Success, 0 Failure
 
         if(($null -eq $location) -or ($null -eq $environment) -or ($null -eq $clientCode) -or $($null -eq $imageName)){
             write-output $WebhookData
@@ -91,10 +92,10 @@ function New-VirtualMachine {
         
         
         .\Log-Info.ps1 -Message "INFORMATION | RETRIEVING TENANT DETAILS"
-        $tenantRootResourceGroupName  =   "cs-$location-$clientCode-$environment-rgrp".ToUpper()
-        $resourceGroup      =   Get-AzResourceGroup -Name $tenantRootResourceGroupName -ErrorVariable Rg -ErrorAction SilentlyContinue
-        $nsgName            =   "cs-$location-$clientCode-$environment-nsg".ToUpper()
-        $vNetName           =   "cs-$location-$clientCode-$environment-vnet".ToUpper()
+        $tenantRootResourceGroupName  =   "cs-$clientCode-$environment-rgrp".ToUpper()
+        #$resourceGroup      =   Get-AzResourceGroup -Name $tenantRootResourceGroupName -ErrorVariable Rg -ErrorAction SilentlyContinue
+        $nsgName            =   "cs-$clientCode-$environment-nsg".ToUpper()
+        $vNetName           =   "cs-$clientCode-$environment-vnet".ToUpper()
         #$storage            =   -join("cs", $location,$clientCode,$environment, "stg").ToLower() 
         
 
@@ -112,7 +113,6 @@ function New-VirtualMachine {
             "_lab_type"     = "virtualmachine";
             "_created"      = (get-date).ToShortDateString();
         }
-    
         $uniqueId       = (New-Guid).ToString().Replace("-","")
         $resourceName   = "cs-$clientCode-$image-VM-$uniqueId".ToUpper()            
         $uniqueId       = (New-Guid).ToString().Replace("-","")
@@ -132,18 +132,17 @@ function New-VirtualMachine {
         $labResourceGroupName =.\Set-ResourceGroup.ps1 `
             -Location $location `
             -Environment $environment `
-            -clientCode $clientCode `
-            -codeLocation $codeLocation
+            -clientCode $clientCode
     
             .\Log-Info.ps1 -Message "INFORMATION | Resource group to be used :: $labResourceGroupName"
             
         if($isCustomTemplate){
-            $resourceName = $templateName
+            $resourceName = $templateName # If no vm name pass custom template
             .\Log-Info.ps1 -Message "INFORMATION | STARTED CREATION OF VIRTUAL MACHINE FOR CUSTOM TEMPLATE"
         }   
         else{
-            .\Log-Info.ps1 -Message "INFORMATION | STARTED CREATION OF VIRTUAL MACHINE FOR END USER"
-            $resourceName = "cs-$clientCode-$environment-VM-$uniqueId".ToLower()
+            .\Log-Info.ps1 -Message "INFORMATION | STARTED CREATION OF VIRTUAL MACHINE FOR END USER" # With VM name
+            $resourceName = "cs-$clientCode-$environment-VM-$uniqueId".ToUpper() #CS-BINUS-P-VM-09240dec-43e6-4def-b6a5-2a113242f796
         } 
         
         $password = Get-RandomCharacters -length 10 -characters 'abcdefghiklmnoprstuvwxyz'
@@ -155,6 +154,12 @@ function New-VirtualMachine {
         $username = Get-RandomCharacters -length 10 -characters 'abcdefghiklmnoprstuvwxyz'
         $username = "csonline$username"
         $virtualMachineName =  $resourceName.ToUpper();
+        
+        $computerName = Get-RandomCharacters -length 5 -characters 'ABCDEFGHKLMNOPRSTUVWXYZ'
+        $computerName += Get-RandomCharacters -length 5 -characters '1234567890'
+        $computerName = "CS"+(Scramble-String $computerName)
+        $computerName = $computerName.ToUpper()
+        
         $templateParameterObjectVirtualMachine = @{
             "networkSecurityGroupId"    =   $nsgId;
             "subnetName"                =   "virtual-machines-labs-subnet";
@@ -164,23 +169,23 @@ function New-VirtualMachine {
             "adminUsername"             =   $username;
             "adminPassword"             =   $password;
             "storageAccountName"        =   $storage;
-            "imageUri"                  =   "https://$storage.blob.core.windows.net/virtual-machine-image-templates/$imageName";
+            "imageUri"                  =   $imageUri
             "tags"                      =   $resourceTags;
             "virtualMachineSize"        =   $vmSize;
             "diskSizeGB"                =   $diskSizeGB;
-            "defaultVhdLocationPath"    =   "$defaultVhdLocationPath";
+            #"defaultVhdLocationPath"    =   "$defaultVhdLocationPath";
             "newTemplateName"           =   $templateName;
             "publicIpAddressType"		=	$publicIpAddressType;
             "publicIpAddressSku"		=	$publicIpAddressSku;
         }
             
         $uniqueId = (New-Guid).ToString().Replace("-","")
-        $vmTemplateName = "windows.template.json"
-        $vmTemplateNameExtentionName = "windows.template.custom.extension.json"
+        $vmTemplateName = "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/main/templates/windows.template.json"
+        $vmTemplateNameExtentionName = "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/main/templates/windows.template.custom.extension.json"
     
         $OSTYPE = "WINDOWS"
         if($imageName.ToUpper() -match "LINUX" -or $imageName.ToUpper() -match "UBUNTU"){
-            $vmTemplateName = "linux.template.json"
+            $vmTemplateName = "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/main/templates/linux.template.json"
             $OSTYPE = "LINUX"
         }
 
@@ -189,73 +194,103 @@ function New-VirtualMachine {
         .\Log-Info.ps1 -Message "INFORMATION | DEPLOYMENT NAME $resourceName"      
         .\Log-Info.ps1 -Message "INFORMATION | RESOURCEGROUP NAME $labResourceGroupName"
 
-        $defaultVhdLocationPath = $defaultVhdLocationPath.Replace("/","")
-        $customerSubscriptionId =  (get-azcontext).Subscription.Id        
-        $vmResourceId =  "/subscriptions/$customerSubscriptionId/resourceGroups/$labResourceGroupName/providers/Microsoft.Compute/virtualMachines/$virtualMachineName"
-        $publicIpResourceId = "/subscriptions/$customerSubscriptionId/resourceGroups/$labResourceGroupName/providers/Microsoft.Network/publicIPAddresses/$virtualMachineName"
-        $nicResourceId = "/subscriptions/$customerSubscriptionId/resourceGroups/$labResourceGroupName/providers/Microsoft.Network/networkInterfaces/$virtualMachineName"
-        $osDiskUri =    [System.Web.HttpUtility]::UrlEncode("https://$storage.blob.core.windows.net/$defaultVhdLocationPath/$virtualMachineName.vhd")
+        #$defaultVhdLocationPath = $defaultVhdLocationPath.Replace("/","")
+        #$customerSubscriptionId =  (get-azcontext).Subscription.Id        
+        # $vmResourceId =  "/subscriptions/$customerSubscriptionId/resourceGroups/$labResourceGroupName/providers/Microsoft.Compute/virtualMachines/$virtualMachineName"
+        # $publicIpResourceId = "/subscriptions/$customerSubscriptionId/resourceGroups/$labResourceGroupName/providers/Microsoft.Network/publicIPAddresses/$virtualMachineName"
+        # $nicResourceId = "/subscriptions/$customerSubscriptionId/resourceGroups/$labResourceGroupName/providers/Microsoft.Network/networkInterfaces/$virtualMachineName"
+        # $osDiskUri =    [System.Web.HttpUtility]::UrlEncode("https://$storage.blob.core.windows.net/vhds/$virtualMachineName.vhd")
 
-        $virtualMachineBrokeredMessage = @{
-            "Operation"                 = "UPDATE";
-            "Status"                    = $virtual_machine_provisioning_started;
-            "ClientCode"                = $clientCode;
-            "RequestID"                 = $requestId;
-            "Dns"                       = "NA";
-            "PublicIpResourceId"        = $publicIpResourceId;
-            "VirtualMachineResourceId"  = $vmResourceId;
-            "NicId"                     = $nicResourceId;
-            "OsType"                    = $OSTYPE;
-            "OsDiskUri"                 = $osDiskUri;
-            "VirtualMachineName"        = $virtualMachineName;
-            "AdminUsername"             = $username;
-            "AdminPassword"             = $password;
-            "IsReadyForUsage"           = 0;
-        }
+        # $virtualMachineBrokeredMessage = @{
+        #     "Operation"                 = "UPDATE";
+        #     "Status"                    = $virtual_machine_provisioning_started;
+        #     "ClientCode"                = $clientCode;
+        #     "RequestID"                 = $requestId;
+        #     "Dns"                       = "NA";
+        #     "PublicIpResourceId"        = $publicIpResourceId;
+        #     "VirtualMachineResourceId"  = $vmResourceId;
+        #     "NicId"                     = $nicResourceId;
+        #     "OsType"                    = $OSTYPE;
+        #     "OsDiskUri"                 = $osDiskUri;
+        #     "VirtualMachineName"        = $virtualMachineName;
+        #     "AdminUsername"             = $username;
+        #     "AdminPassword"             = $password;
+        #     "IsReadyForUsage"           = 0;
+        # }
 
-        $vmMessage = ($virtualMachineBrokeredMessage | ConvertTo-Json -Compress -Depth 10) 
+        # $vmMessage = ($virtualMachineBrokeredMessage | ConvertTo-Json -Compress -Depth 10) 
 
         $deploymentVm = New-AzResourceGroupDeployment `
             -Name "virtual-machine-$uniqueId".ToLower() `
             -ResourceGroupName $labResourceGroupName `
             -templateParameterObject  $templateParameterObjectVirtualMachine `
-            -TemplateUri "https://$storageAccountName.blob.core.windows.net/labs-infrastructure/$($vmTemplateName)$sharedStorageAccountSasToken" `
+            -TemplateUri $vmTemplateName `
             -ErrorVariable ErrorCreatingVm `
             -ErrorAction SilentlyContinue `
             -DeploymentDebugLogLevel All
-
-        if($ErrorCreatingVm)
-        {
-            Write-Output $ErrorCreatingVm
+        $deploymentVm
+        $ErrorCreatingVm
+        # if($ErrorCreatingVm)
+        # {
+        #     Write-Output $ErrorCreatingVm
     
-            if($ErrorCreatingVm -match "The VM may still finish provisioning successfully" -or $ErrorCreatingVm -match "did not finish in the allotted time"){
-                .\Log-Info.ps1 -Message "INFORMATION | TIMEOUT OCCURED WHILE PROVISIONING VM"
-                .\Log-Info.ps1 -Message "INFORMATION | ATTEMPTING TO PROCEED TO CATCH CREATED RESOURCES"
-            }
-            else{
-                .\Log-Info.ps1 -Message "INFORMATION | UNKNOWN ERROR OCCURED"
-                throw $deploymentVm
-            }
-        }  
+        #     if($ErrorCreatingVm -match "The VM may still finish provisioning successfully" -or $ErrorCreatingVm -match "did not finish in the allotted time"){
+        #         .\Log-Info.ps1 -Message "INFORMATION | TIMEOUT OCCURED WHILE PROVISIONING VM"
+        #         .\Log-Info.ps1 -Message "INFORMATION | ATTEMPTING TO PROCEED TO CATCH CREATED RESOURCES"
+        #     }
+        #     else{
+        #         .\Log-Info.ps1 -Message "INFORMATION | UNKNOWN ERROR OCCURED"
+        #         throw $deploymentVm
+        #     }
+        # }  
         
-        .\Log-Info.ps1 -Message "INFORMATION | RETRIEVING VIRTUAL MACHINE DETAILS"
-        $newPublicIp = (Get-AzPublicIpAddress -Name $virtualMachineName -ResourceGroupName $labResourceGroupName)
-        $newNetworkInterfaceCard = (Get-AzNetworkInterface -Name $virtualMachineName -ResourceGroupName $labResourceGroupName)
-        $newVM = Get-AzVM -ResourceGroupName $labResourceGroupName  -Name $virtualMachineName
+        # .\Log-Info.ps1 -Message "INFORMATION | RETRIEVING VIRTUAL MACHINE DETAILS"
+        # $newPublicIp = (Get-AzPublicIpAddress -Name $virtualMachineName -ResourceGroupName $labResourceGroupName)
+        # $newNetworkInterfaceCard = (Get-AzNetworkInterface -Name $virtualMachineName -ResourceGroupName $labResourceGroupName)
+        # $newVM = Get-AzVM -ResourceGroupName $labResourceGroupName  -Name $virtualMachineName
             
-        if($ErrorCreatingVm){
-            $TABLE_ROW_STATUS = $virtual_machine_provisioning_failure
-            $isVirtualMachineReadyForUsage = 0
-            $virtualMachineDeploymentStatus = 0
+        # if($ErrorCreatingVm){
+        #     $TABLE_ROW_STATUS = $virtual_machine_provisioning_failure
+        #     $isVirtualMachineReadyForUsage = 0
+        #     $virtualMachineDeploymentStatus = 0
+        # }
+        # else{
+        #     $TABLE_ROW_STATUS = $virtual_machine_provisioning_success
+        #     $isVirtualMachineReadyForUsage = 1
+        #     $virtualMachineDeploymentStatus = 1
+        # }
+
+        $templateParameterObjectVirtualMachineExension = @{
+            "vmName"    =   $virtualMachineName;
+            "fileUris"  =   "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/create-environment-variables-windows.ps1";
+            "arguments" =   "-ResourceGroupName $labResourceGroupName -VirtualMachineName $virtualMachineName -ComputerName $computerName -TenantId $tenantId -GroupCode $groupCode -Fqdn $fqdn";
+        }
+       
+        if($imageName -match "LINUX" -or $imageName.ToUpper() -match "UBUNTU"){
+            .\Log-Info.ps1 -Message "INFORMATION | POWERSHELL EXTENSION HAS BEEN IGNORED ON LINUX VIRTUAL MACHINE"
         }
         else{
-            $TABLE_ROW_STATUS = $virtual_machine_provisioning_success
-            $isVirtualMachineReadyForUsage = 1
-            $virtualMachineDeploymentStatus = 1
+            if($ErrorCreatingVm){
+                .\Log-Info.ps1 -Message "INFORMATION | IGNORING INSTALLATION OF VIRTUAL MACHINE EXTENSION AS DEPLOYMENT FAILED"
+            }
+            else{
+                .\Log-Info.ps1 -Message "INFORMATION | START INSTALLING VM EXTENSION FOR ENVIRONMENTVARIABLES"
+                New-AzResourceGroupDeployment `
+                    -Name "vm-extension-$uniqueId" `
+                    -ResourceGroupName $labResourceGroupName `
+                    -templateParameterObject  $templateParameterObjectVirtualMachineExension `
+                    -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/windows.template.custom.extension.json"
+                
+                .\Log-Info.ps1 -Message "INFORMATION | COMPLETED INSTALLING VM EXTENSION FOR ENVIRONMENT VARIABLES"
+            }
         }
+
     }
     catch{
         write-output $_
         throw $_
     }
 }
+New-VirtualMachine
+
+

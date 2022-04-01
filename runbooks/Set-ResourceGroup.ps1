@@ -6,10 +6,6 @@ param (
 
     [Parameter(Mandatory=$true)]
     [string]
-    $codeLocation,
-
-    [Parameter(Mandatory=$true)]
-    [string]
     $environment,
 
     [Parameter(Mandatory=$true)]
@@ -34,11 +30,11 @@ param (
     }
 
     for ($i = 1; $i -le $maxRGLimit; $i++) {
-        $resourceGroupName = "cs-$location-$clientCode$i-$environment-rgrp".ToUpper()                
+        $resourceGroupName = "cs-$clientCode$i-$environment-rgrp".ToUpper()                
         $resourceGroup = Get-AzResourceGroup -Name $resourceGroupName -ErrorVariable NonExistingRG -ErrorAction SilentlyContinue
         
         if($null -eq $resourceGroup){
-            New-AzResourceGroup -Name $resourceGroupName -Location $codeLocation -Tags $rgTags -Force | Out-Null
+            New-AzResourceGroup -Name $resourceGroupName -Location $location -Tags $rgTags -Force | Out-Null
         }
 
         $resourcesCount =  (Get-AzResource -ResourceGroupName $resourceGroupName).Count
