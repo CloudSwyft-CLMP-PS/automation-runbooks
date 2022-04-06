@@ -168,12 +168,6 @@
                             "patchMode": "[parameters('patchMode')]"
                         }
                     }
-                },
-                "diagnosticsProfile": {
-                    "bootDiagnostics": {
-                        "enabled": false,
-                        "storageUri": "[concat('https://', parameters('storageAccountName'), 'diag.blob.core.windows.net/')]"
-                    }
                 }
             },
             "tags": "[parameters('tags')]"

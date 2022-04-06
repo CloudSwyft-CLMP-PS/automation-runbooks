@@ -161,12 +161,6 @@
                     "computerName": "[parameters('computerName')]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]"
-                },
-                "diagnosticsProfile": {
-                    "bootDiagnostics": {
-                        "enabled": false,
-                        "storageUri": "[concat('https://', parameters('storageAccountName'), 'diag.blob.core.windows.net/')]"
-                    }
                 }
             },
             "tags": "[parameters('tags')]"
