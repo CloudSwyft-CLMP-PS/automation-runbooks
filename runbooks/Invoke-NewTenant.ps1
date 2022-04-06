@@ -20,7 +20,6 @@ function Authenticate-Principal (
 $requestBody                = (ConvertFrom-Json -Inputobject $WebhookData.RequestBody)
 $Prefix                     = $requestBody.Prefix
 $environment                = $requestBody.Environment 
-$clientCode                 = $requestBody.ClientCode
 $contactEmail               = $requestBody.ContactEmail
 $Region                     = $requestBody.Region
 $applicationSubscriptionId  = $requestBody.applicationSubscriptionId
@@ -42,34 +41,21 @@ Authenticate-Principal `
 
 .\Log-Info.ps1 -Message "INFORMATION | Prefix : $Prefix" 
 .\Log-Info.ps1 -Message "INFORMATION | CLOUD REGION : $Region" 
-#.\Log-Info.ps1 -Message "INFORMATION | CLIENT CODE : $clientCode"
 .\Log-Info.ps1 -Message "INFORMATION | ENVIRONMENT : $environment" 
 .\Log-Info.ps1 -Message "INFORMATION | USE CLOUDSWYFT TENANT : $UseCloudSwyftTenant" 
 
 $resourceGroupName                  =   "cs-$Prefix-$environment-rgrp".ToUpper()
 $nsgName                            =   "cs-$Prefix-$environment-nsg".ToUpper()
 $vNetName                           =   "cs-$Prefix-$environment-vnet".ToUpper()
-$storage                            =   -join("cs", $Prefix,$environment, "stg").ToLower() 
-#$storageDiag                        =   -join("cs", $Prefix,$environment, "stgdiag").ToLower() 
 
 $rgTags = @{ 
     "_business_name"        =   "cs";
     "_region"               =   $Region;
     "_contact_person"       =   $contactEmail;
-    #"_client_code"          =   $clientCode.ToUpper(); 
     "_environment"          =   $environment.ToUpper()
 }
 
-$tenantRootResourceGroupName = $resourceGroupName
-
 .\Log-Info.ps1 -Message "INFORMATION | SETTING UP ADDITIONAL TAGS" 
-
-$resourceTags =  $rgTags + @{
-    "_lab_type"     = "labs";
-    "_created"      = (get-date).ToShortDateString();
-}
-
-$uniqueId                       = (NEW-GUID).ToString().Replace("-","")
 
 $templateParameterobjectNsg     = @{
     "nsgName"                   = $nsgName.ToUpper();
@@ -82,21 +68,6 @@ $templateParameterobjectVnet    = @{
     "nsgName"                   =   $nsgName.ToUpper()
     "tags"                      =   $rgTags;
 }
-
-$templateParameterobjectStorage = @{
-    "storageAccountName"        =   $storage;
-    "tags"                      =   $rgTags;
-}
-
-$templateParameterobjectStorageDiag = @{
-    "storageAccountName"            =   ($storage+"diag");
-    "storageSkuName"                =   "Standard_LRS";
-    "tags"                          =   $rgTags;
-}
-
-$uniqueId = (NEW-GUID).ToString().Replace("-","")
-
-#$templateUrl = "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/nsg-web-app.network.json"
 
 $resourceGroup =   Get-AzResourceGroup -Name $resourceGroupName -ErrorVariable Rg -ErrorAction SilentlyContinue  | OUT-NULL
 
@@ -121,6 +92,7 @@ $deploymentNsg = New-AzResourceGroupDeployment `
     -ResourceGroupName $resourceGroupName `
     -templateParameterobject  $templateParameterobjectNsg `
     -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/nsg-web-app.network.json" | OUT-NULL
+$deploymentNsg
 .\Log-Info.ps1 -Message "COMPLETED | CREATING NSG :: $nsgName"
 
 .\Log-Info.ps1 -Message "INITIALIZED | CREATING VIRTUAL NETWORK :: $vNetName"
@@ -129,20 +101,5 @@ $deploymentVnet = New-AzResourceGroupDeployment `
     -ResourceGroupName $resourceGroupName `
     -templateParameterobject  $templateParameterobjectVnet `
     -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/virtual-network/azuredeploy.network.json" | OUT-NULL
+$deploymentVnet
 .\Log-Info.ps1 -Message "COMPLETED | CREATING VIRTUAL NETWORK :: $vNetName"
-
-.\Log-Info.ps1 -Message "INITIALIZED | CREATING STORAGE ACCOUNT :: $storage"
-New-AzResourceGroupDeployment `
-    -Name "$storage-$uniqueId" `
-    -ResourceGroupName $resourceGroupName `
-    -templateParameterobject  $templateParameterobjectStorage `
-    -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/storage-account/azuredeploy.json" | OUT-NULL
-.\Log-Info.ps1 -Message "COMPLETED | CREATING STORAGE ACCOUNT :: $storage"
-
-.\Log-Info.ps1 -Message "INITIALIZED | CREATING STORAGE ACCOUNT DIAG :: $storage"
-New-AzResourceGroupDeployment `
-    -Name "$storage-$uniqueId" `
-    -ResourceGroupName $resourceGroupName `
-    -templateParameterobject  $templateParameterobjectStorageDiag `
-    -TemplateUri "https://raw.githubusercontent.com/CloudSwyft-CLMP-PS/automation-runbooks/dev_env/templates/storage-account/diagnostics.json" | OUT-NULL
-.\Log-Info.ps1 -Message "COMPLETED | CREATING STORAGE ACCOUNT  DIAG :: $storage"
