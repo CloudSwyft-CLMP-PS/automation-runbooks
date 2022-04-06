@@ -45,7 +45,8 @@ function New-VirtualMachine {
         $location                       = $requestBody.location # azure region
         $environment                    = $requestBody.environment # Emvironment
         $clientCode                     = $requestBody.clientCode # Prefix
-        $vmName                         = $requestBody.vmName # Virtual machine or image name
+        $imageName                      = $requestBody.imageName
+        $vmName                         = $requestBody.vmName # Virtual machine name
         $vmSize                         = $requestBody.size
         $tenantId                       = $requestBody.tenantId
         $groupCode                      = $clientCode
@@ -63,7 +64,7 @@ function New-VirtualMachine {
         $applicationTenantId            = $requestBody.ApplicationTenantId    
         $applicationSecret              = $requestBody.ApplicationSecret   
 
-        if(($null -eq $location) -or ($null -eq $environment) -or ($null -eq $clientCode) -or $($null -eq $vmName)){
+        if(($null -eq $location) -or ($null -eq $environment) -or ($null -eq $clientCode) -or $($null -eq $imageName)){
             write-output $WebhookData
             throw "Incorrect request body."
         }
@@ -143,7 +144,7 @@ function New-VirtualMachine {
         $computerName = "CS"+(Scramble-String $computerName)
         $computerName = $computerName.ToUpper()
         
-        $virtualMachineName = $resourceName
+        #$virtualMachineName = $resourceName
 
         $templateParameterObjectVirtualMachine = @{
             "networkSecurityGroupId"    =   $nsgId;
@@ -186,19 +187,20 @@ function New-VirtualMachine {
             -ErrorAction SilentlyContinue `
             -DeploymentDebugLogLevel All
         $deploymentVm
-        if($errorcreatingvm)
-        {
-            write-output $errorcreatingvm
+        $ErrorCreatingVm
+        # if($errorcreatingvm)
+        # {
+        #     write-output $errorcreatingvm
     
-            if($errorcreatingvm -match "the vm may still finish provisioning successfully" -or $errorcreatingvm -match "did not finish in the allotted time"){
-                .\log-info.ps1 -message "information | timeout occured while provisioning vm"
-                .\log-info.ps1 -message "information | attempting to proceed to catch created resources"
-            }
-            else{
-                .\log-info.ps1 -message "information | unknown error occured"
-                throw $deploymentvm
-            }
-        }  
+        #     if($errorcreatingvm -match "the vm may still finish provisioning successfully" -or $errorcreatingvm -match "did not finish in the allotted time"){
+        #         .\log-info.ps1 -message "information | timeout occured while provisioning vm"
+        #         .\log-info.ps1 -message "information | attempting to proceed to catch created resources"
+        #     }
+        #     else{
+        #         .\log-info.ps1 -message "information | unknown error occured"
+        #         throw $deploymentvm
+        #     }
+        # }  
 
         $templateParameterObjectVirtualMachineExension = @{
             "vmName"    =   $virtualMachineName;
